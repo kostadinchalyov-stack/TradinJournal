@@ -55,6 +55,7 @@ fieldset input{width:auto;margin:0}
 .instrument-wrap{position:relative}.suggestions{position:absolute;z-index:20;top:64px;left:0;right:0;max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 8px 24px rgba(10,20,35,.16)}.suggestions button{display:block;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 10px;color:var(--ink);font:inherit;cursor:pointer}.suggestions button:hover,.suggestions button:focus-visible{background:var(--bg)}
 #checklist>label,#checklist .custom-row label{display:block;color:var(--mut);font-size:13px;padding:0}#checklist .check-option{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px;padding:5px 0}#checklist .check-option input{width:auto;margin:0}.check-list{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin:6px 0 10px}.recent-list{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}.recent-list button{background:var(--bg);border:1px solid var(--line);border-radius:99px;color:var(--ink);padding:4px 9px;font:inherit;font-size:12px;cursor:pointer}.custom-row{align-items:end}.custom-row label{flex:1}.custom-row button{margin-bottom:0}.search-help{margin:0 0 5px}.check-error{color:var(--loss);font-size:13px;min-height:1.2em;margin:5px 0 0}
 .price-state{display:block;min-height:1.2em;margin-top:3px;color:var(--mut);font-size:12px}.price-state[data-state="valid"]{color:var(--win)}.price-state[data-state="warning"]{color:var(--acc)}.price-state[data-state="invalid"]{color:var(--loss)}.price-field input[aria-invalid="true"]{border-color:var(--loss);box-shadow:0 0 0 1px var(--loss)}.auth-providers{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.auth-divider{display:flex;align-items:center;gap:8px;color:var(--mut);font-size:12px;margin:10px 0}.auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--line);flex:1}#authdlg label{margin-bottom:8px}@media(max-width:520px){.auth-providers{grid-template-columns:1fr}}
+.sync-tools{display:flex;align-items:center;gap:6px}.sync-tools .badge{white-space:nowrap}
 @media(max-width:520px){.g{grid-template-columns:1fr}.wrap{padding:14px 12px 56px}}
 @media(max-width:520px){.check-list{grid-template-columns:1fr}}
 @media(max-width:760px){#tabs{width:100%;overflow-x:auto}#tabs button{flex:0 0 auto;padding:7px 10px}header>.row:last-child{width:100%;justify-content:flex-end}}
@@ -62,10 +63,10 @@ fieldset input{width:auto;margin:0}
 <body><div class="wrap">
 <header><h1>Trading journal</h1>
 <nav id="tabs" role="tablist"><button data-t="dash" aria-selected="true">Dashboard</button><button data-t="log" aria-selected="false">Trades</button><button data-t="brk" aria-selected="false">Breakdown</button><button data-t="acc" aria-selected="false">Accounts</button><button data-t="coach" aria-selected="false">Coach</button><button data-t="plans" aria-selected="false">Plans</button></nav>
-<div class="row"><select id="acc" aria-label="Account" style="width:auto;margin:0"></select><button class="ghost" id="profile">Sign in</button><button class="btn" id="add">Add trade</button></div></header>
+<div class="row"><select id="acc" aria-label="Account" style="width:auto;margin:0"></select><span class="sync-tools"><span class="badge" id="sync-status" role="status">Local only</span><button class="ghost" id="sync-now" hidden>Sync now</button></span><button class="ghost" id="profile">Sign in</button><button class="btn" id="add">Add trade</button></div></header>
 <main id="v"></main>
 <section class="p" id="data">
-<p>Your trades are stored in this browser only. Export a backup now and then.</p>
+<p>Your journal saves on this device. Sign in to sync trades and accounts across your devices. Export a backup now and then.</p>
 <div class="row"><button class="ghost" id="xc" hidden>Export CSV</button><button class="ghost" id="xj" hidden>Export backup (JSON)</button><button class="ghost" id="imp-b">Import backup</button><button class="ghost" id="rs" hidden>Remove sample trades</button><button class="ghost" id="clr">Delete all trades</button></div>
 <input type="file" id="imp" accept=".json,application/json" hidden>
 <p id="msg" role="status"></p></section>
@@ -112,11 +113,12 @@ fieldset input{width:auto;margin:0}
 <label>Password<input id="profile-password" type="password" autocomplete="current-password" placeholder="At least 8 characters" minlength="8"></label>
 <label id="auth-confirm-wrap" hidden>Confirm password<input id="profile-password-confirm" type="password" autocomplete="new-password"></label>
 <div class="row"><button class="btn" type="button" id="auth-save">Sign in</button><button class="ghost" type="button" id="auth-switch">Create account</button><button class="ghost" type="button" id="auth-reset">Forgot password?</button></div>
-</div><div id="auth-signed-in" hidden><p id="auth-account"></p><button class="ghost" type="button" id="auth-out">Sign out</button></div>
+</div><div id="auth-signed-in" hidden><p id="auth-account"></p><button class="ghost" type="button" id="auth-out">Sign out</button><button class="ghost" type="button" id="auth-delete">Delete account</button><p class="subtle">Deleting your sign-in account also deletes its synced trades and accounts. Your local device copy remains.</p></div>
 <p id="autherr" role="alert" style="color:var(--loss);min-height:1.4em;margin:8px 0;font-size:14px"></p>
 <div class="row"><button class="ghost" type="button" id="auth-cancel">Close</button></div></dialog>
 <script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore-compat.js"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s),mem={};
@@ -124,9 +126,9 @@ const st={get(k){try{return localStorage.getItem(k)}catch(e){return mem[k]??null
 // Paste the Firebase web app config here. Never put service-account credentials or private keys in browser code.
 const FIREBASE_CONFIG={apiKey:'AIzaSyDLJl-STNMtpM4BywSlVk26LGMmpG07W9U',authDomain:'tradelog-575b8.firebaseapp.com',projectId:'tradelog-575b8',storageBucket:'tradelog-575b8.firebasestorage.app',messagingSenderId:'238714384431',appId:'1:238714384431:web:31f28308a8e4ec44d5d6da',measurementId:'G-WVCMPV77ER'};
 const AUTH_CONFIGURED=Object.values(FIREBASE_CONFIG).every(value=>value&&!String(value).startsWith('YOUR_'));
-let auth=null,profile=null,authMode='signin';
+let auth=null,db=null,profile=null,authMode='signin';
 const AUTH_HOST_READY=location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
-if(AUTH_CONFIGURED&&AUTH_HOST_READY&&window.firebase){try{if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{})}catch(e){auth=null}}
+if(AUTH_CONFIGURED&&AUTH_HOST_READY&&window.firebase){try{if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);auth=firebase.auth();if(firebase.firestore)db=firebase.firestore();auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{})}catch(e){auth=null;db=null}}
 let planState={trialUntil:0,trialUsed:false};try{planState={...planState,...JSON.parse(st.get('tj.plan')||'{}')}}catch(e){}
 const isPro=()=>Number(planState.trialUntil)>Date.now(),trialDays=()=>Math.max(0,Math.ceil((Number(planState.trialUntil)-Date.now())/86400000));
 let trades=[];try{trades=JSON.parse(st.get('tj.v1')||'[]')}catch(e){}
@@ -157,7 +159,66 @@ trades.forEach(t=>{if(!accs.some(a=>a.id===t.acc))t.acc=accs[0].id});
 let cur=st.get('tj.cur')||'all',aedit=null;
 if(cur!=='all'&&!accs.some(a=>String(a.id)===cur))cur='all';
 let tab='dash',edit=null,dl=null,armed=false,cm=new Date();
-const persist=()=>{st.set('tj.v1',JSON.stringify(trades));st.set('tj.acc',JSON.stringify(accs))};
+let boundUid=st.get('tj.syncUid')||'',syncBusy=false,syncAgain=false,syncTimer=0;
+let lastTradeSnapshot=new Map(),lastAccountSnapshot=new Map();
+let syncStatusText='Local only',syncStatusDetail='Trades are saved on this device.';
+const makeSyncId=()=>window.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+function recordFingerprint(record,kind){const copy={...record};delete copy.id;delete copy._syncAt;delete copy._deleted;if(kind==='trade')delete copy.acc;return JSON.stringify(copy)}
+function ensureSyncIds(){
+ accs.forEach(a=>{if(!a._syncId)a._syncId=String(a.id)==='1'&&a.name==='Main account'?'default-main-account':makeSyncId();if(!Number.isFinite(+a._syncAt))a._syncAt=Date.now()});
+ trades.forEach(t=>{if(!t._syncId)t._syncId=makeSyncId();if(!Number.isFinite(+t._syncAt))t._syncAt=Date.now();if(!t.accSyncId){const account=accs.find(a=>String(a.id)===String(t.acc));if(account)t.accSyncId=account._syncId}})
+}
+function resetSyncSnapshots(){lastTradeSnapshot=new Map(trades.map(t=>[t._syncId,recordFingerprint(t,'trade')]));lastAccountSnapshot=new Map(accs.map(a=>[a._syncId,recordFingerprint(a,'account')]))}
+function syncOwnerUid(){return auth&&auth.currentUser?auth.currentUser.uid:boundUid}
+function tombstoneKey(kind,uid=syncOwnerUid()){return uid?`tj.user.${uid}.deleted.${kind}`:`tj.deleted.${kind}`}
+function readTombstones(kind,uid=syncOwnerUid()){try{const value=JSON.parse(st.get(tombstoneKey(kind,uid))||'[]');return Array.isArray(value)?value:[]}catch(e){return[]}}
+function writeTombstones(kind,value,uid=syncOwnerUid()){st.set(tombstoneKey(kind,uid),JSON.stringify(value))}
+function cacheKey(uid,kind){return `tj.user.${uid}.${kind}`}
+function saveUserCache(uid=syncOwnerUid()){if(!uid)return;st.set(cacheKey(uid,'trades'),JSON.stringify(trades));st.set(cacheKey(uid,'accounts'),JSON.stringify(accs))}
+function setSyncStatus(text,detail=text){syncStatusText=text;syncStatusDetail=detail;const badge=$('#sync-status');if(badge){badge.textContent=text;badge.title=detail}const button=$('#sync-now');if(button)button.hidden=!profile}
+function queueCloudSync(){if(!auth||!auth.currentUser)return;clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow(),700)}
+function persist({detect=true,sync=true}={}){
+ ensureSyncIds();const uid=syncOwnerUid(),now=Date.now();
+ if(detect){
+  trades.forEach(t=>{const previous=lastTradeSnapshot.get(t._syncId);if(previous!==undefined&&previous!==recordFingerprint(t,'trade'))t._syncAt=now});
+  accs.forEach(a=>{const previous=lastAccountSnapshot.get(a._syncId);if(previous!==undefined&&previous!==recordFingerprint(a,'account'))a._syncAt=now});
+  const deletedTrades=readTombstones('trades',uid);lastTradeSnapshot.forEach((_,id)=>{if(!trades.some(t=>t._syncId===id))deletedTrades.push({_syncId:id,_syncAt:now,_deleted:true})});if(deletedTrades.length)writeTombstones('trades',deletedTrades,uid);
+  const deletedAccounts=readTombstones('accounts',uid);lastAccountSnapshot.forEach((_,id)=>{if(!accs.some(a=>a._syncId===id))deletedAccounts.push({_syncId:id,_syncAt:now,_deleted:true})});if(deletedAccounts.length)writeTombstones('accounts',deletedAccounts,uid);
+ }
+ st.set('tj.v1',JSON.stringify(trades));st.set('tj.acc',JSON.stringify(accs));if(uid)saveUserCache(uid);resetSyncSnapshots();if(sync&&uid)queueCloudSync();
+}
+function stableJson(value){if(Array.isArray(value))return '['+value.map(stableJson).join(',')+']';if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+stableJson(value[key])).join(',')+'}';return JSON.stringify(value)}
+function cloudRecord(record,kind){const copy={...record};delete copy.id;delete copy.acc;if(kind==='trade'&&!copy.accSyncId){const account=accs.find(a=>String(a.id)===String(record.acc));if(account)copy.accSyncId=account._syncId}return copy}
+async function writeCollection(collection,records){for(let offset=0;offset<records.length;offset+=400){const batch=db.batch();records.slice(offset,offset+400).forEach(record=>batch.set(collection.doc(record._syncId),record));await batch.commit()}}
+async function syncNow(){
+ const user=auth&&auth.currentUser;if(!user){setSyncStatus('Local only','Sign in to sync this journal across devices.');return}
+ if(!db){setSyncStatus('Setup required','Firestore SDK is unavailable. Check the site connection and Firebase setup.');return}
+ if(syncBusy){syncAgain=true;return}
+ syncBusy=true;setSyncStatus('Syncing…','Reading and merging this account’s trades and accounts.');
+ try{
+  ensureSyncIds();const uid=user.uid,root=db.collection('users').doc(uid),tradeCol=root.collection('trades'),accountCol=root.collection('accounts');
+  const [remoteTradeSnap,remoteAccountSnap]=await Promise.all([tradeCol.get(),accountCol.get()]);
+  if(!auth.currentUser||auth.currentUser.uid!==uid)return;
+  const remoteTrades=new Map(remoteTradeSnap.docs.map(doc=>[doc.id,{...doc.data(),_syncId:doc.id}])),remoteAccounts=new Map(remoteAccountSnap.docs.map(doc=>[doc.id,{...doc.data(),_syncId:doc.id}]));
+  const localTradeMap=new Map(trades.map(t=>[t._syncId,t])),localAccountMap=new Map(accs.map(a=>[a._syncId,a]));
+  const merge=(locals,remotes,tombstones)=>{const merged=new Map();remotes.forEach((record,id)=>merged.set(id,record));locals.forEach((record,id)=>{const cloud=merged.get(id);if(!cloud||Number(record._syncAt||0)>=Number(cloud._syncAt||0))merged.set(id,record)});tombstones.forEach(tomb=>{const old=merged.get(tomb._syncId);if(!old||Number(tomb._syncAt||0)>=Number(old._syncAt||0))merged.set(tomb._syncId,tomb)});return merged};
+  const mergedAccounts=merge(localAccountMap,remoteAccounts,readTombstones('accounts',uid)),mergedTrades=merge(localTradeMap,remoteTrades,readTombstones('trades',uid));
+  const desiredAccounts=[...mergedAccounts.values()].filter(a=>!a._deleted),desiredTrades=[...mergedTrades.values()].filter(t=>!t._deleted);
+  if(!desiredAccounts.length)desiredAccounts.push({id:1,name:'Main account',broker:'Other',type:'Live',start:0,_syncId:'default-main-account',_syncAt:Date.now()});
+  const previousAccBySync=new Map(accs.map(a=>[a._syncId,a])),usedIds=new Set();let nextId=Date.now();
+  accs=desiredAccounts.map(a=>{const old=previousAccBySync.get(a._syncId),id=old?old.id:(Number.isFinite(+a.id)&&!usedIds.has(String(a.id))?+a.id:nextId++);usedIds.add(String(id));return{...a,id}});
+  const accountIdBySync=new Map(accs.map(a=>[a._syncId,a.id])),previousTradeBySync=new Map(trades.map(t=>[t._syncId,t]));
+  trades=desiredTrades.map(t=>{const old=previousTradeBySync.get(t._syncId),localAcc=accs.find(a=>String(a.id)===String(t.acc)),accId=accountIdBySync.get(t.accSyncId)||localAcc?.id||accs[0].id;return{...t,id:old?old.id:(Number.isFinite(+t.id)&&!previousTradeBySync.has(t._syncId)?+t.id:nextId++),acc:accId}});
+  ensureSyncIds();
+  const writes=(kind,merged,collection)=>{const output=[];merged.forEach((record,id)=>{const wanted=cloudRecord(record,kind);wanted._syncId=id;if(!Number.isFinite(+wanted._syncAt))wanted._syncAt=Date.now();const old=kind==='trade'?remoteTrades.get(id):remoteAccounts.get(id);if(!old||stableJson(cloudRecord(old,kind))!==stableJson(wanted))output.push(wanted)});return writeCollection(collection,output)};
+  await Promise.all([writes('trade',mergedTrades,tradeCol),writes('account',mergedAccounts,accountCol)]);
+  if(!auth.currentUser||auth.currentUser.uid!==uid)return;
+  writeTombstones('trades',[],uid);writeTombstones('accounts',[],uid);boundUid=uid;st.set('tj.syncUid',uid);
+  st.set('tj.v1',JSON.stringify(trades));st.set('tj.acc',JSON.stringify(accs));saveUserCache(uid);resetSyncSnapshots();setSyncStatus('Synced','Last successful sync '+new Date().toLocaleTimeString());
+ }catch(error){const code=error&&error.code||'';if(code==='permission-denied')setSyncStatus('Rules needed','Publish Firestore rules to allow private user sync.');else if(code==='failed-precondition'||code==='not-found')setSyncStatus('Setup required','Create the Cloud Firestore database, then publish firestore.rules.');else if(!navigator.onLine||code==='unavailable')setSyncStatus('Offline','Changes are saved locally and will retry when you reconnect.');else setSyncStatus('Sync error','Cloud sync failed ('+(code||'unknown error')+'). Your local data is safe; retry after checking Firebase setup.')}
+ finally{syncBusy=false;if(syncAgain){syncAgain=false;queueCloudSync()}}
+}
+ensureSyncIds();resetSyncSnapshots();
 const sum=a=>a.reduce((x,y)=>x+y,0);
 const R=t=>{const d=t.dir==='Long'?1:-1,r=(t.entry-t.sl)*d;return r>0?(t.exit-t.entry)*d/r:0};
 const P=t=>R(t)*t.risk-(t.fee||0);
@@ -244,14 +305,16 @@ function coach(){
 }
 function plans(){
  const active=isPro(),expiry=active?new Date(Number(planState.trialUntil)).toLocaleDateString():'',email=profile&&profile.email?esc(profile.email):'Not signed in';
- return`<section class="p"><div class="row sp"><h2>Plans</h2><span class="badge ${active?'pro':''}">${active?'Pro preview · '+trialDays()+' days left':'Free plan'}</span></div><p class="subtle">Choose the level that fits your journal. Subscription billing and cloud trade sync need separate services; your trades remain stored in this browser.</p><div class="cards"><article class="p"><div class="row sp"><h2>Free</h2><span class="badge">${active?'Available':'Current plan'}</span></div><div class="price">$0 <small>forever</small></div><ul class="feature-list"><li>Up to 100 trades</li><li>One trading account</li><li>Core journal, calendar, and performance dashboard</li><li>Current and best win streaks</li><li>Two local coaching observations</li></ul><p class="subtle">Your profile: ${email}</p></article><article class="p"><div class="row sp"><h2>Pro</h2><span class="badge pro">${active?'Preview active':planState.trialUsed?'Preview ended':'7-day free trial'}</span></div><div class="price">$12.99 <small>/ month</small></div><ul class="feature-list"><li>Unlimited trade history and accounts</li><li>Expanded coaching observations</li><li>All existing journal and analytics tools</li></ul>${active?`<p class="subtle">Your local preview is enabled through ${expiry}. It will not renew or charge you.</p><button class="ghost" id="trial-end">End preview</button>`:planState.trialUsed?`<p class="subtle">Your browser-only preview has ended. Connect a secure checkout to activate a paid subscription.</p>`:`<button class="btn" id="trial-start">Start 7-day free trial</button>`}</article></div></section><section class="p"><h2>Account and privacy</h2><p class="subtle">${profile?`Signed in as ${email}.`:'You are not signed in.'} Trades and plan preview state stay in this browser. Sign-in uses Firebase when it is configured. Your trades remain in this browser; cloud sync, AI model access, and $12.99 subscription checkout need separate services.</p><div class="row"><button class="ghost" id="profile-open">${profile?'Manage account':'Sign in'}</button></div></section>`
+ const reminderTime=/^\d{2}:\d{2}$/.test(st.get('tj.reminderTime')||'')?st.get('tj.reminderTime'):'20:00',native=!!window.tradingJournalNative;
+ return`<section class="p"><div class="row sp"><h2>Plans</h2><span class="badge ${active?'pro':''}">${active?'Pro preview · '+trialDays()+' days left':'Free plan'}</span></div><p class="subtle">Choose the level that fits your journal. Sign in and enable Firestore to sync trades and accounts across devices. Subscription billing is not configured; the Pro trial is a local preview.</p><div class="cards"><article class="p"><div class="row sp"><h2>Free</h2><span class="badge">${active?'Available':'Current plan'}</span></div><div class="price">$0 <small>forever</small></div><ul class="feature-list"><li>Up to 100 trades</li><li>One trading account</li><li>Core journal, calendar, and performance dashboard</li><li>Current and best win streaks</li><li>Two local coaching observations</li></ul><p class="subtle">Your profile: ${email}</p></article><article class="p"><div class="row sp"><h2>Pro</h2><span class="badge pro">${active?'Preview active':planState.trialUsed?'Preview ended':'7-day free trial'}</span></div><div class="price">$12.99 <small>/ month</small></div><ul class="feature-list"><li>Unlimited trade history and accounts</li><li>Expanded coaching observations</li><li>All existing journal and analytics tools</li></ul>${active?`<p class="subtle">Your local preview is enabled through ${expiry}. It will not renew or charge you.</p><button class="ghost" id="trial-end">End preview</button>`:planState.trialUsed?`<p class="subtle">Your browser-only preview has ended. Connect a secure checkout to activate a paid subscription.</p>`:`<button class="btn" id="trial-start">Start 7-day free trial</button>`}</article></div></section><section class="p"><h2>Account and privacy</h2><p class="subtle">${profile?`Signed in as ${email}.`:'You are not signed in.'} Trades and accounts sync through your Firebase account when Firestore is enabled. Local saves remain available offline. Sign-in uses Firebase. AI model access and $12.99 subscription checkout still need separate services.</p><div class="row"><button class="ghost" id="profile-open">${profile?'Manage account':'Sign in'}</button></div></section>${native?`<section class="p"><h2>Daily journaling reminder</h2><p class="subtle">Choose a time for an optional reminder on this device. It is scheduled locally and does not send your trading data anywhere.</p><div class="row"><label>Reminder time<input id="reminder-time" type="time" value="${reminderTime}"></label><button class="btn" id="reminder-enable">${st.get('tj.reminderEnabled')==='1'?'Update reminder':'Set reminder'}</button>${st.get('tj.reminderEnabled')==='1'?'<button class="ghost" id="reminder-disable">Turn off</button>':''}</div><p class="subtle" id="reminder-status" role="status"></p></section>`:''}`
 }
 function render(){
  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===tab));
  $('#v').innerHTML=tab==='dash'?dash():tab==='log'?log():tab==='acc'?acv():tab==='coach'?coach():tab==='plans'?plans():brk();
  $('#acc').innerHTML='<option value="all">All accounts</option>'+accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');$('#acc').value=cur;
  $('#profile').textContent=profile?'Account':'Sign in';$('#profile').title=profile?'Manage account: '+profile.email:'Sign in';
- $('#xc').hidden=$('#xj').hidden=!dl||!trades.length;
+ $('#sync-status').textContent=syncStatusText;$('#sync-status').title=syncStatusDetail;$('#sync-now').hidden=!profile;
+ $('#xc').hidden=$('#xj').hidden=!trades.length;
  $('#rs').hidden=!trades.some(t=>t.smp);
 }
 function renderChecklist(){
@@ -290,7 +353,7 @@ function saveTrade(){
  const t={...(edit||{}),id:edit?edit.id:Date.now(),chk:BASE_CHECKS.map(name=>dialogChecked.has(name)),confluences:activeChecks.filter(name=>dialogChecked.has(name))};
  ['date','inst','dir','ses','mis','notes'].forEach(k=>t[k]=$('#f_'+k).value.trim());
  ['entry','sl','exit','risk'].forEach(k=>t[k]=parseFloat($('#f_'+k).value));
- t.acc=+$('#f_acc').value;t.fee=parseFloat($('#f_fee').value)||0;
+ t.acc=+$('#f_acc').value;t.fee=parseFloat($('#f_fee').value)||0;const selectedAccount=accs.find(a=>String(a.id)===String(t.acc));if(selectedAccount)t.accSyncId=selectedAccount._syncId;
  const long=t.dir==='Long';
  const priceCheck=updatePriceValidation();if(!priceCheck.valid){$('#err').textContent=priceCheck.error;return}
  const bad=(!t.date||!t.inst||[t.entry,t.sl,t.exit,t.risk].some(isNaN))?'Fill in date, instrument, entry, stop loss, exit and amount risked.':t.risk<=0?'Amount risked must be above zero.':'';
@@ -326,7 +389,7 @@ function authSetupMessage(){
  if(!AUTH_CONFIGURED)return 'Set up Firebase Authentication: add your Firebase web app config in FIREBASE_CONFIG, then enable Email/Password and Google. Apple also needs setup in Apple Developer and Firebase.';
  if(!AUTH_HOST_READY)return 'Secure sign-in requires HTTPS (or localhost during development).';
  if(!auth)return 'Firebase Authentication could not load. Check your connection and Firebase SDK scripts.';
- return 'Sign-in is handled by Firebase. Your trades still stay in this browser and do not sync across devices.';
+ return 'Sign-in uses Firebase. Signed-in trades and accounts sync through Cloud Firestore once the database and security rules are enabled.';
 }
 function authReady(){const message=authSetupMessage();if(message&&(!auth||location.protocol==='file:'||!AUTH_HOST_READY)){ $('#autherr').textContent=message;return false}return true}
 function updateAuthControls(){const ready=!!auth&&AUTH_HOST_READY;['auth-google','auth-apple','profile-email','profile-password','profile-password-confirm','auth-save','auth-switch','auth-reset'].forEach(id=>{const control=$('#'+id);control.disabled=!ready})}
@@ -338,7 +401,7 @@ function openProfile(){
 }
 function authErrorMessage(error){
  const code=error&&error.code||'';const messages={
-  'auth/invalid-email':'Enter a valid email address.','auth/invalid-credential':'Email or password is incorrect.','auth/wrong-password':'Email or password is incorrect.','auth/user-not-found':'Email or password is incorrect.','auth/user-disabled':'This account is disabled. Contact support.','auth/email-already-in-use':'An account already uses this email. Sign in instead.','auth/weak-password':'Choose a stronger password with at least 8 characters.','auth/popup-blocked':'Your browser blocked the sign-in window. Allow pop-ups and try again.','auth/popup-closed-by-user':'Sign-in was cancelled.','auth/operation-not-allowed':'This sign-in method is not enabled in Firebase Authentication.','auth/unauthorized-domain':'This website domain is not authorized in Firebase Authentication.','auth/account-exists-with-different-credential':'This email already uses another sign-in method. Try that provider first.'
+  'auth/invalid-email':'Enter a valid email address.','auth/invalid-credential':'Email or password is incorrect.','auth/wrong-password':'Email or password is incorrect.','auth/user-not-found':'Email or password is incorrect.','auth/user-disabled':'This account is disabled. Contact support.','auth/email-already-in-use':'An account already uses this email. Sign in instead.','auth/weak-password':'Choose a stronger password with at least 8 characters.','auth/popup-blocked':'Your browser blocked the sign-in window. Allow pop-ups and try again.','auth/popup-closed-by-user':'Sign-in was cancelled.','auth/operation-not-allowed':'This sign-in method is not enabled in Firebase Authentication.','auth/unauthorized-domain':'This website domain is not authorized in Firebase Authentication.','auth/account-exists-with-different-credential':'This email already uses another sign-in method. Try that provider first.','auth/requires-recent-login':'For security, sign in again and retry account deletion.'
  };return messages[code]||'Sign-in could not be completed. Check your account setup and try again.';
 }
 async function submitAuth(){
@@ -353,10 +416,21 @@ async function resetAuthPassword(){
 }
 async function signInProvider(name){
  $('#autherr').textContent='';if(!authReady())return;
- try{const provider=name==='google'?new firebase.auth.GoogleAuthProvider():new firebase.auth.OAuthProvider('apple.com');if(name==='apple'){provider.addScope('email');provider.addScope('name')}const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);if(mobile)await auth.signInWithRedirect(provider);else await auth.signInWithPopup(provider)}catch(error){$('#autherr').textContent=authErrorMessage(error)}
+ try{if(window.tradingJournalNativeAuthProvider){await window.tradingJournalNativeAuthProvider(name)}else{const provider=name==='google'?new firebase.auth.GoogleAuthProvider():new firebase.auth.OAuthProvider('apple.com');if(name==='apple'){provider.addScope('email');provider.addScope('name')}const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);if(mobile)await auth.signInWithRedirect(provider);else await auth.signInWithPopup(provider)}}catch(error){$('#autherr').textContent=authErrorMessage(error)}
 }
-async function signOut(){if(!auth){$('#autherr').textContent=authSetupMessage();return}try{await auth.signOut();$('#authdlg').close()}catch(error){$('#autherr').textContent='Could not sign out. Try again.'}}
-if(auth)auth.onAuthStateChanged(user=>{profile=user?{email:user.email||user.displayName||'Signed-in account'}:null;if(user&&$('#authdlg').open)$('#authdlg').close();render()});function startTrial(){if(planState.trialUsed)return;planState.trialUntil=Date.now()+7*86400000;planState.trialUsed=true;st.set('tj.plan',JSON.stringify(planState));render()}
+async function signOut(){if(!auth){$('#autherr').textContent=authSetupMessage();return}try{if(window.tradingJournalNativeSignOut)await window.tradingJournalNativeSignOut();else await auth.signOut();$('#authdlg').close()}catch(error){$('#autherr').textContent='Could not sign out. Try again.'}}
+async function purgeSyncedJournal(uid){for(const name of ['trades','accounts']){const collection=db.collection('users').doc(uid).collection(name);const snapshot=await collection.get();for(let offset=0;offset<snapshot.docs.length;offset+=400){const batch=db.batch();snapshot.docs.slice(offset,offset+400).forEach(doc=>batch.delete(doc.ref));await batch.commit()}}}
+async function deleteAccount(){if(!auth||!auth.currentUser){$('#autherr').textContent='Sign in before deleting your account.';return}if(!confirm('Delete this Firebase sign-in account and its synced cloud trades and accounts? This cannot be undone. The local copy on this device will remain.'))return;const user=auth.currentUser;try{if(!db)throw{code:'unavailable'};await purgeSyncedJournal(user.uid);await user.delete();if(window.tradingJournalNativeSignOut)await window.tradingJournalNativeSignOut();$('#authdlg').close();$('#msg').textContent='Your sign-in account and synced journal were deleted.'}catch(error){$('#autherr').textContent=error&&error.code==='failed-precondition'?'Cloud Firestore is not set up yet. Your sign-in account was not deleted.':error&&error.code==='unavailable'?'Could not reach Cloud Firestore. Your sign-in account was not deleted.':authErrorMessage(error)}}
+function restoreUserCache(uid){
+ let savedTrades=null,savedAccounts=null;try{savedTrades=JSON.parse(st.get(cacheKey(uid,'trades'))||'null')}catch(e){}try{savedAccounts=JSON.parse(st.get(cacheKey(uid,'accounts'))||'null')}catch(e){}
+ trades=Array.isArray(savedTrades)?savedTrades:[];accs=Array.isArray(savedAccounts)&&savedAccounts.length?savedAccounts:[{id:1,name:'Main account',broker:'Other',type:'Live',start:0,_syncId:'default-main-account',_syncAt:0}];
+ trades.forEach(t=>{if(!accs.some(a=>String(a.id)===String(t.acc)))t.acc=accs[0].id});cur='all';st.set('tj.cur',cur);ensureSyncIds();resetSyncSnapshots();st.set('tj.v1',JSON.stringify(trades));st.set('tj.acc',JSON.stringify(accs));
+}
+if(auth)auth.onAuthStateChanged(user=>{
+ const uid=user&&user.uid||'';profile=user?{email:user.email||user.displayName||'Signed-in account'}:null;
+ if(uid){if(boundUid&&boundUid!==uid){saveUserCache(boundUid);restoreUserCache(uid)}boundUid=uid;st.set('tj.syncUid',uid);if($('#authdlg').open)$('#authdlg').close();setSyncStatus('Syncing…','Checking this account’s cloud journal.');render();syncNow()}
+ else{setSyncStatus('Local only','Signed out. This device keeps its saved journal.');render()}
+});function startTrial(){if(planState.trialUsed)return;planState.trialUntil=Date.now()+7*86400000;planState.trialUsed=true;st.set('tj.plan',JSON.stringify(planState));render()}
 function endTrial(){planState.trialUntil=0;st.set('tj.plan',JSON.stringify(planState));render()}
 function sample(){
  let a=7;const rnd=()=>(a=a*16807%2147483647)/2147483647,Rs=[-1,-1,-1,-1,2,3,1.6,2.4,-.5,4,.8],S=['London','New York','New York','Asia'];
@@ -366,7 +440,7 @@ function sample(){
   trades.push({id:Date.now()+id++,smp:1,acc:cur==='all'?accs[0].id:+cur,date:iso(d),inst:nas?'NAS100':'SPX500',dir:long?'Long':'Short',ses:S[Math.floor(rnd()*4)],entry,sl:+(long?entry-dist:entry+dist).toFixed(1),exit:+(entry+(long?1:-1)*r0*dist).toFixed(1),risk:100,chk:[0,1,2,3].map(i=>i<k),mis:r0<0&&k<3?'Skipped checklist':'',notes:''});}
  persist();cm=new Date();render();
 }
-async function out(name,data){try{await dl.save({filename:name,data});$('#msg').textContent=''}catch(e){$('#msg').textContent=e&&e.code==='declined'?'':'Could not save the file here.'}}
+async function out(name,data){try{if(window.tradingJournalNativeExport)await window.tradingJournalNativeExport(name,data);else if(dl)await dl.save({filename:name,data});else{const type=name.endsWith('.csv')?'text/csv;charset=utf-8':'application/json;charset=utf-8',url=URL.createObjectURL(new Blob([data],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}$('#msg').textContent=''}catch(e){$('#msg').textContent=e&&e.code==='declined'?'':'Could not export this file.'}}
 function csv(){const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
  return['date,account,broker,instrument,side,session,entry,stop_loss,exit,risked,fees,r,pnl,confluence_count,confluences,mistake,notes',...asc().map(t=>[t.date,accOf(t).name,accOf(t).broker,t.inst,t.dir,t.ses,t.entry,t.sl,t.exit,t.risk,t.fee||0,R(t).toFixed(2),P(t).toFixed(2),selectedChecks(t).length,selectedChecks(t).join('; '),t.mis,t.notes].map(q).join(','))].join('\n')}
 document.addEventListener('click',e=>{
@@ -387,12 +461,16 @@ document.addEventListener('click',e=>{
  else if(b.id==='acancel')$('#adlg').close();
  else if(b.id==='adel')delAcc();
  else if(b.id==='profile'||b.id==='profile-open')openProfile();
+ else if(b.id==='sync-now')syncNow();
  else if(b.id==='auth-save')submitAuth();
  else if(b.id==='auth-switch')setAuthMode(authMode==='signin'?'signup':'signin');
  else if(b.id==='auth-reset')resetAuthPassword();
  else if(b.id==='auth-google')signInProvider('google');
  else if(b.id==='auth-apple')signInProvider('apple');
+ else if(b.id==='auth-delete')deleteAccount();
  else if(b.id==='auth-out')signOut();
+ else if(b.id==='reminder-enable'){const time=$('#reminder-time').value;if(!/^\d{2}:\d{2}$/.test(time)){$('#reminder-status').textContent='Choose a valid reminder time.';return}if(!window.tradingJournalSetReminder){$('#reminder-status').textContent='Native reminders are unavailable.';return}window.tradingJournalSetReminder(time).then(()=>{st.set('tj.reminderTime',time);st.set('tj.reminderEnabled','1');render();$('#reminder-status').textContent='Daily reminder set for '+time+'.'}).catch(()=>{$('#reminder-status').textContent='Could not set the reminder. Check notification permission in Settings.'})}
+ else if(b.id==='reminder-disable'){if(window.tradingJournalCancelReminder)window.tradingJournalCancelReminder().then(()=>{st.set('tj.reminderEnabled','0');render();$('#reminder-status').textContent='Daily reminder turned off.'}).catch(()=>{$('#reminder-status').textContent='Could not turn off the reminder.'})}
  else if(b.id==='auth-cancel')$('#authdlg').close();
  else if(b.id==='trial-start')startTrial();
  else if(b.id==='trial-end')endTrial();
@@ -431,14 +509,16 @@ $('#imp').addEventListener('change',e=>{
   if(o&&Array.isArray(o.accounts))o.accounts.forEach(x=>{if(x&&x.name&&!accs.some(y=>y.id===x.id))accs.push({id:+x.id||Date.now(),name:String(x.name),broker:BR.includes(x.broker)?x.broker:'Other',type:x.type||'Live',start:+x.start||0})});
   if(!Array.isArray(a)||!a.every(t=>t&&t.date&&['entry','sl','exit','risk'].every(k=>typeof t[k]==='number')))throw 0;
   const ids=new Set(trades.map(t=>t.id));let n=0;
-  a.forEach(t=>{if(!ids.has(t.id)){trades.push({...t,id:+t.id||Date.now()+n,dir:t.dir==='Short'?'Short':'Long',chk:Array.isArray(t.chk)?t.chk.slice(0,4):[0,0,0,0],confluences:Array.isArray(t.confluences)?t.confluences.filter(x=>typeof x==='string').map(x=>x.trim()).filter(Boolean):undefined,acc:accs.some(x=>x.id===t.acc)?t.acc:accs[0].id,fee:+t.fee||0});n++}});
+  a.forEach(t=>{if(!ids.has(t.id)){trades.push({...t,id:+t.id||Date.now()+n,dir:t.dir==='Short'?'Short':'Long',chk:Array.isArray(t.chk)?t.chk.slice(0,4):[0,0,0,0],confluences:Array.isArray(t.confluences)?t.confluences.filter(x=>typeof x==='string').map(x=>x.trim()).filter(Boolean):undefined,acc:accs.some(x=>x.id===t.acc)?t.acc:accs[0].id,accSyncId:undefined,fee:+t.fee||0});n++}});
   persist();render();$('#msg').textContent='Imported '+n+' trade'+(n===1?'':'s')+'.'}
   catch(x){$('#msg').textContent='That file is not a backup from this journal.'}e.target.value=''};
  r.readAsText(f);
 });
 $('#acc').addEventListener('change',e=>{cur=e.target.value;st.set('tj.cur',cur);if(tab==='acc')tab='dash';cm=asc().length?new Date(asc().pop().date+'T00:00'):new Date();render()});
+window.addEventListener('online',()=>syncNow());
 if(asc().length)cm=new Date(asc().pop().date+'T00:00');
 render();
 if(window.claude&&claude.use)claude.use('downloads').then(d=>{dl=d;render()}).catch(()=>{});
+ window.addEventListener('tradingjournal-native-ready',render);
 })();
 </script></body></html>
