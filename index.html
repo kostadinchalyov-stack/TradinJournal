@@ -66,7 +66,7 @@ fieldset input{width:auto;margin:0}
 <div class="row"><select id="acc" aria-label="Account" style="width:auto;margin:0"></select><span class="sync-tools"><span class="badge" id="sync-status" role="status">Local only</span><button class="ghost" id="sync-now" hidden>Sync now</button></span><button class="ghost" id="profile">Sign in</button><button class="btn" id="add">Add trade</button></div></header>
 <main id="v"></main>
 <section class="p" id="data">
-<p>Your journal saves on this device. Sign in to sync trades and accounts across your devices. Export a backup now and then.</p>
+<p id="data-note">Your journal saves on this device. Sign in to sync trades and accounts across your devices. Export a backup now and then.</p>
 <div class="row"><button class="ghost" id="xc" hidden>Export CSV</button><button class="ghost" id="xj" hidden>Export backup (JSON)</button><button class="ghost" id="imp-b">Import backup</button><button class="ghost" id="rs" hidden>Remove sample trades</button><button class="ghost" id="clr">Delete all trades</button></div>
 <input type="file" id="imp" accept=".json,application/json" hidden>
 <p id="msg" role="status"></p></section>
@@ -314,6 +314,7 @@ function render(){
  $('#acc').innerHTML='<option value="all">All accounts</option>'+accs.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');$('#acc').value=cur;
  $('#profile').textContent=profile?'Account':'Sign in';$('#profile').title=profile?'Manage account: '+profile.email:'Sign in';
  $('#sync-status').textContent=syncStatusText;$('#sync-status').title=syncStatusDetail;$('#sync-now').hidden=!profile;
+ $('#data-note').textContent=profile?'Your journal syncs to your account across devices. Changes also save locally when offline. Export a backup now and then.':'Your journal saves on this device. Sign in to sync trades and accounts across your devices. Export a backup now and then.';
  $('#xc').hidden=$('#xj').hidden=!trades.length;
  $('#rs').hidden=!trades.some(t=>t.smp);
 }
